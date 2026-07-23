@@ -1,0 +1,35 @@
+- esbuild:
+    entryPoints:
+        - ./src/background/sw.js
+        - ./src/content/autofill.js
+        - ./src/popup/popup.js
+        - ./src/connections/connections.js
+        - ./src/fullpage/vault.js
+        - ./src/shared/crypto/kdf-worker.js
+    outdir: ./dist
+    sourcemap: 1
+    format: 3
+    platform: 0
+    bundle: true
+    write: true
+    logLevel: 3
+    purgeBeforeBuild: true
+  watch:
+    paths:
+        - ./src
+    exclude: []
+    skipCSPInject: true
+  copy:
+    - src: ./src/static/manifest.json
+      dest: ./dist
+    - src: ./src/popup/popup.html
+      dest: ./dist/popup
+    - src: ./src/connections/connections.html
+      dest: ./dist/connections
+    - src: ./src/fullpage/vault.html
+      dest: ./dist/fullpage
+    - src: ./src/static/icons
+      dest: ./dist/icons
+  link:
+    from: /home/pk/web/tp-elements
+    to: .

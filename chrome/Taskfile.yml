@@ -1,0 +1,29 @@
+# https://taskfile.dev
+
+version: '3'
+
+tasks:
+  deps:
+    desc: Install npm dependencies (required before build)
+    cmds:
+      - npm install
+
+  build:
+    desc: Build the extension for production
+    deps:
+      - deps
+    cmds:
+      - gowebbuild build -p
+
+  dev:
+    desc: Watch sources and rebuild on changes
+    deps:
+      - deps
+    cmds:
+      - gowebbuild watch
+    interactive: true
+
+  clean:
+    desc: Clean build output
+    cmds:
+      - rm -rf dist
