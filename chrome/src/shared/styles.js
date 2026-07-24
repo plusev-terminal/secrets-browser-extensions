@@ -73,6 +73,13 @@ export const controls = css`
     margin-right: 2px;
   }
 
+  tp-input tp-icon[slot="suffix"] {
+    --tp-icon-width: 18px;
+    --tp-icon-height: 18px;
+    cursor: pointer;
+    margin-right: var(--space-2);
+  }
+
   tp-dialog::part(dialog) {
     box-shadow: var(--shadow-lg);
     max-height: 98vh;

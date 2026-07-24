@@ -83,7 +83,9 @@ export class ThePopup extends LitElement {
           --tp-icon-color: var(--icon-color);
         }
 
-        .conn-toggle:hover { --tp-icon-color: var(--icon-color-hover); }
+        .conn-toggle:hover {
+          --tp-icon-color: var(--icon-color-hover);
+        }
 
         .search-row {
           padding: var(--space-3) var(--space-4);
@@ -108,8 +110,9 @@ export class ThePopup extends LitElement {
           gap: var(--space-3);
         }
 
-        .entry:hover { background: var(--surface-hover); }
-
+        .entry:hover {
+          background: var(--surface-hover);
+        }
         .entry-icon {
           width: 24px;
           height: 24px;
@@ -148,7 +151,9 @@ export class ThePopup extends LitElement {
           transition: opacity 0.15s;
         }
 
-        .entry:hover .entry-actions { opacity: 1; }
+        .entry:hover .entry-actions {
+          opacity: 1;
+        }
 
         .entry-action {
           display: flex;
@@ -168,12 +173,20 @@ export class ThePopup extends LitElement {
           border-color: var(--text-hl);
         }
 
-        .match-banner {
-          padding: var(--space-2) var(--space-4);
+        .section-label {
+          padding: var(--space-3) var(--space-3) var(--space-1);
           font-size: var(--font-size-xs);
-          color: var(--text-hl);
-          border-bottom: solid 1px var(--border-strong);
+          font-weight: 600;
+          color: var(--text-dim);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
           flex-shrink: 0;
+        }
+
+        .all-entries-label {
+          border-top: solid 1px var(--border-strong);
+          margin-top: var(--space-2);
+          padding-top: var(--space-3);
         }
 
         .unlock-form {
@@ -380,13 +393,6 @@ export class ThePopup extends LitElement {
           text-decoration: line-through;
           opacity: 0.5;
         }
-
-        .eye-icon {
-          --tp-icon-width: 18px;
-          --tp-icon-height: 18px;
-          cursor: pointer;
-          margin-right: var(--space-2);
-        }
     `];
   }
 
@@ -478,12 +484,6 @@ export class ThePopup extends LitElement {
             ${this._renderMoreMenu()}
           </div>
         </div>
-        ${this._autofillMatches.length > 0 ? html`
-          <div class="match-banner">
-            ${this._autofillMatches.length} match${this._autofillMatches.length > 1 ? 'es' : ''}
-            for ${this._hostname}
-          </div>
-        ` : ''}
         <div class="search-row">
           <tp-input id="searchInput">
             <input
@@ -495,20 +495,44 @@ export class ThePopup extends LitElement {
                 this._searchTimer = setTimeout(() => this._doSearch(), 80);
               }}
             >
+            <tp-icon slot="suffix" .icon=${icons.backspace} @click=${() => this._clearSearch()}></tp-icon>
           </tp-input>
         </div>
         <div class="results scrollbar">
-          ${this._entries.length === 0
+          ${this._listItems.length === 0
             ? html`<el-empty absolute>No entries found.</el-empty>`
             : virtualize({
-                items: this._entries,
-                keyFunction: e => e.id,
+                items: this._listItems,
+                keyFunction: item => item._kind === 'label' ? `label-${item.text}` : item.id,
                 scroller: true,
-                renderItem: e => this._renderEntryItem(e),
+                renderItem: item => this._renderListItem(item),
               })}
         </div>
       </div>
     `;
+  }
+
+  get _listItems() {
+    const showSuggestions = this._autofillMatches.length > 0 && !this._searchQuery;
+    const items = [];
+
+    if (showSuggestions) {
+      items.push({ _kind: 'label', text: `Autofill for ${this._hostname}` });
+      for (const m of this._autofillMatches) items.push(m);
+      items.push({ _kind: 'label', text: 'All entries', _allEntries: true });
+    }
+
+    for (const e of this._entries) items.push(e);
+
+    return items;
+  }
+
+  _renderListItem(item) {
+    if (item._kind === 'label') {
+      return html`<div class="section-label ${item._allEntries ? 'all-entries-label' : ''}">${item.text}</div>`;
+    }
+
+    return this._renderEntryItem(item);
   }
 
   _renderEntryItem(entry) {
@@ -898,6 +922,7 @@ export class ThePopup extends LitElement {
     _showPassword: { type: Boolean },
     _selectedEntry: { type: Object },
     _revealedKeys: { state: true },
+    _searchQuery: { state: true },
   };
 
   constructor() {
@@ -916,6 +941,7 @@ export class ThePopup extends LitElement {
     this._showPassword = false;
     this._selectedEntry = null;
     this._revealedKeys = new Set();
+    this._searchQuery = '';
   }
 
   async connectedCallback() {
@@ -1022,17 +1048,23 @@ export class ThePopup extends LitElement {
     if (!input) return;
 
     const q = input.value;
-
-    if (!q && this._autofillMatches.length > 0) {
-      this._entries = this._autofillMatches;
-      this.requestUpdate();
-      return;
-    }
+    this._searchQuery = q;
 
     send({ type: 'SEARCH', query: q }).then(resp => {
       this._entries = resp.results || [];
       this.requestUpdate();
     });
+  }
+
+  _clearSearch() {
+    const input = this.renderRoot.querySelector('#searchInput input');
+
+    if (!input) return;
+
+    input.value = '';
+    this._searchQuery = '';
+    this._doSearch();
+    input.focus();
   }
 
   async _enterUnlocked(state) {
@@ -1052,12 +1084,8 @@ export class ThePopup extends LitElement {
       this._autofillMatches = r.results || [];
     }
 
-    if (this._autofillMatches.length > 0) {
-      this._entries = this._autofillMatches;
-    } else {
-      const r = await send({ type: 'SEARCH', query: '' });
-      this._entries = r.results || [];
-    }
+    const r = await send({ type: 'SEARCH', query: '' });
+    this._entries = r.results || [];
 
     this.requestUpdate();
 

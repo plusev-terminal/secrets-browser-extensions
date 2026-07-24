@@ -117,12 +117,7 @@ async function updateBadge() {
     const hostname = new URL(tab.url).hostname;
     const matches = store.matchHostname(hostname);
 
-    // Once the content script has reported, only surface matches when a
-    // login form is actually present in the tab. No report yet → show them.
-    const frames = tabLoginFrames.get(tab.id);
-    const formPresent = frames === undefined || frames.size > 0;
-
-    if (matches.length > 0 && formPresent) {
+    if (matches.length > 0) {
       await chrome.action.setBadgeText({ text: String(matches.length) });
       await chrome.action.setBadgeBackgroundColor({ color: BADGE_MATCH_COLOR });
     } else {
