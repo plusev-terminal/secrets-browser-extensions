@@ -8,7 +8,7 @@
 
 import { deriveMasterKey, DEFAULT_KDF_PARAMS } from './crypto/kdf.js';
 import { base64ToBytes } from './crypto/crypto.js';
-import { verifyMasterKey, decryptEntry } from './crypto/keys.js';
+import { verifyMasterKey, decryptEntry, encryptEntry } from './crypto/keys.js';
 import { buildIndex, addToIndex, removeFromIndex } from './search/index.js';
 import { parseQuery, matchesOperators } from './search/query.js';
 import { scoreRow, rankByScore } from './search/score.js';
@@ -110,6 +110,11 @@ export class VaultStore {
     return this.entries.get(id) || null;
   }
 
+  // List all decrypted folders (for the path selector).
+  listFolders() {
+    return [...this.folders.values()];
+  }
+
   // Search entries by query. Supports the operator syntax from
   // search/query.js (tag:, host:, type:, scope:, has:, strength:, changed:)
   // plus free-text scoring via search/score.js. When the query is empty, all
@@ -160,6 +165,51 @@ export class VaultStore {
     }
 
     return results;
+  }
+
+  // Create a new entry: encrypt the payload, POST to the server, cache locally.
+  async createEntry(type, payload) {
+    const { wrappedDek, ciphertext } = await encryptEntry(this.masterKey, payload);
+
+    const resp = await this.client.post('/entries/create', {
+      vaultId: this.vault.id,
+      type,
+      wrappedDek,
+      ciphertext,
+    });
+
+    const wireEntry = resp.data;
+    const cached = { ...wireEntry, payload };
+
+    this.entries.set(wireEntry.id, cached);
+    addToIndex(this.index, cached);
+
+    return cached;
+  }
+
+  // Update an existing entry: re-encrypt under a fresh DEK, PUT to the server.
+  async updateEntry(id, type, payload) {
+    const { wrappedDek, ciphertext } = await encryptEntry(this.masterKey, payload);
+
+    const cached = this.entries.get(id);
+    const lastKnownRevisionDate = cached?.revisionDate || null;
+
+    const resp = await this.client.post('/entries/update', {
+      id,
+      type,
+      wrappedDek,
+      ciphertext,
+      lastKnownRevisionDate,
+    });
+
+    const wireEntry = resp.data;
+    const updated = { ...wireEntry, payload };
+
+    this.entries.set(id, updated);
+    removeFromIndex(this.index, id);
+    addToIndex(this.index, updated);
+
+    return updated;
   }
 
   // Lock: scrub all sensitive state.

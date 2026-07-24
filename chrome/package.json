@@ -13,14 +13,17 @@
     "@noble/hashes": "^2.2.0",
     "@tp/helpers": "^2.0.0",
     "@tp/tp-button": "^1.0.0",
-    "@tp/tp-form": "^1.0.0",
-    "@tp/tp-input": "^1.0.0",
-    "@tp/tp-spinner": "^1.0.0",
-    "@tp/tp-toaster": "^2.0.0",
-    "@tp/tp-icon": "^1.0.0",
-    "@tp/tp-popup": "^1.0.0",
     "@tp/tp-dialog": "^1.0.0",
+    "@tp/tp-dropdown": "^1.0.0",
+    "@tp/tp-form": "^1.0.0",
+    "@tp/tp-icon": "^1.0.0",
+    "@tp/tp-input": "^1.0.0",
+    "@tp/tp-popup": "^1.0.0",
+    "@tp/tp-spinner": "^1.0.0",
+    "@tp/tp-textarea": "^1.0.3",
+    "@tp/tp-toaster": "^2.0.0",
     "@tp/tp-tooltip": "^1.0.0",
+    "@tp/tp-tree-nav": "^1.7.0",
     "lit": "^3.0.0"
   }
 }

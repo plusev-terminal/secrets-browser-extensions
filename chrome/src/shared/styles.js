@@ -62,6 +62,37 @@ export const controls = css`
     font-weight: bold;
   }
 
+  tp-textarea {
+    background: var(--input-bg);
+    border-radius: var(--input-border-radius);
+    border: var(--input-border);
+    box-shadow: var(--input-box-shadow);
+    font-size: var(--font-size-md);
+    --tp-textarea-padding: 5px;
+  }
+
+  tp-textarea[invalid] {
+    outline: var(--tp-input-text-color-invalid) solid 1px;
+    border: none;
+  }
+
+  tp-textarea[focused] {
+    border: var(--input-border-hl);
+  }
+
+  tp-textarea::part(error-message) {
+    font-weight: bold;
+  }
+
+  tp-textarea::part(wrap) {
+    color: var(--text);
+  }
+
+  tp-textarea ::slotted(textarea) {
+    background: transparent;
+    color: var(--text);
+  }
+
   tp-input input[type="text"]::placeholder {
     color: var(--text-dim);
     opacity: 1;
@@ -315,6 +346,21 @@ export const shared = css`
     justify-content: center;
     align-items: center;
     margin-top: 20px;
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  .span2 { grid-column: 1 / -1; }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    column-gap: 5px;
+    row-gap: 0;
   }
 
   .buttons-justified {

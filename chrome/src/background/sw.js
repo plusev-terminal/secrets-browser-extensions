@@ -270,9 +270,29 @@ async function handleMessage(message, sender) {
       if (!store.isUnlocked()) return { error: 'Vault is locked' };
       return { entry: store.getEntry(message.id) };
 
+    case 'LIST_FOLDERS':
+      if (!store.isUnlocked()) return { error: 'Vault is locked' };
+      return { folders: store.listFolders() };
+
     case 'MATCH_HOSTNAME':
       if (!store.isUnlocked()) return { error: 'Vault is locked' };
       return { results: store.matchHostname(message.hostname) };
+
+    case 'CREATE_ENTRY': {
+      if (!store.isUnlocked()) return { error: 'Vault is locked' };
+
+      const entry = await store.createEntry(message.entryType, message.payload);
+      await updateBadge();
+      return { ok: true, entry };
+    }
+
+    case 'UPDATE_ENTRY': {
+      if (!store.isUnlocked()) return { error: 'Vault is locked' };
+
+      const entry = await store.updateEntry(message.id, message.entryType, message.payload);
+      await updateBadge();
+      return { ok: true, entry };
+    }
 
     case 'PAGE_HAS_LOGIN_FORM': {
       const tabId = sender.tab?.id;

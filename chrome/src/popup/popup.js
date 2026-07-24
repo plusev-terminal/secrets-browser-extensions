@@ -12,6 +12,7 @@ import '@tp/tp-popup/tp-popup-menu-divider.js';
 import '@tp/tp-toaster/tp-toaster.js';
 import '@tp/tp-form/tp-form.js';
 import '../elements/el-empty.js';
+import '../elements/el-entry-editor.js';
 import { LitElement, html, css } from 'lit';
 import { virtualize } from '@lit-labs/virtualizer/virtualize.js';
 import icons from '../shared/icons.js';
@@ -32,6 +33,7 @@ export class ThePopup extends LitElement {
         :host {
           display: flex;
           flex-direction: column;
+          position: relative;
           width: 480px;
           height: 500px;
           font-family: var(--font0);
@@ -39,6 +41,13 @@ export class ThePopup extends LitElement {
           background: var(--page-bg);
           color: var(--text);
           overflow: hidden;
+        }
+
+        el-entry-editor {
+          position: absolute;
+          inset: 0;
+          z-index: 10;
+          background: var(--page-bg);
         }
 
         .header {
@@ -269,6 +278,20 @@ export class ThePopup extends LitElement {
 
         .detail-back:hover { --tp-icon-color: var(--text-hl); }
 
+        .header-action-icon {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: var(--space-1);
+          border-radius: var(--default-border-radius);
+          cursor: pointer;
+          --tp-icon-width: 18px;
+          --tp-icon-height: 18px;
+          --tp-icon-color: var(--text);
+        }
+
+        .header-action-icon:hover { --tp-icon-color: var(--text-hl); }
+
         .detail-header-icon {
           --tp-icon-width: 22px;
           --tp-icon-height: 22px;
@@ -422,6 +445,11 @@ export class ThePopup extends LitElement {
 
     return html`
       ${content}
+      <el-entry-editor
+        id="entryEditor"
+        @entry-saved=${(e) => this._onEntrySaved(e)}
+        @entry-cancel=${() => this._onEntryCancel()}
+      ></el-entry-editor>
       <tp-toaster></tp-toaster>
     `;
   }
@@ -480,6 +508,12 @@ export class ThePopup extends LitElement {
         <div class="header">
           ${this._renderVaultMenu()}
           <div class="header-actions">
+            <tp-icon
+              class="header-action-icon"
+              .icon=${icons['plus']}
+              tooltip="Add new entry"
+              @click=${() => this.shadowRoot.querySelector('#entryEditor')?.open(null)}
+            ></tp-icon>
             ${this._renderConnMenu()}
             ${this._renderMoreMenu()}
           </div>
@@ -651,6 +685,12 @@ export class ThePopup extends LitElement {
           ></tp-icon>
           <tp-icon class="detail-header-icon" .icon=${icons[iconName]}></tp-icon>
           <span class="detail-title">${p.title || '(untitled)'}</span>
+          <tp-icon
+            class="detail-back"
+            .icon=${icons['settings']}
+            tooltip="Edit entry"
+            @click=${() => this.shadowRoot.querySelector('#entryEditor')?.open(entry)}
+          ></tp-icon>
           <span class="detail-type-badge">${meta?.label || entry.type}</span>
         </div>
         <div class="detail-body scrollbar">
@@ -837,6 +877,28 @@ export class ThePopup extends LitElement {
       ${this._renderFieldRow('Expires', p.expiresAt)}
       ${this._renderCommon(p)}
     `;
+  }
+
+  // ── Entry editor events ──
+
+  _onEntryCancel() {
+    // Nothing to do — the editor already hides itself via _open = false.
+    // The popup stays in whatever mode it was in.
+  }
+
+  async _onEntrySaved(e) {
+    const { entry, editing } = e.detail;
+
+    if (editing) {
+      this._selectedEntry = entry;
+      this._mode = 'detail';
+    } else {
+      this._mode = 'unlocked';
+    }
+
+    const r = await send({ type: 'SEARCH', query: '' });
+    this._entries = r.results || [];
+    this.requestUpdate();
   }
 
   _renderVaultMenu() {

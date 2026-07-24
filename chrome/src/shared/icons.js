@@ -17,6 +17,30 @@ export default {
   'arrow-left': svg`
     <path fill="var(--tp-icon-color)" d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z" />
   `,
+  'plus': svg`
+    <path fill="var(--tp-icon-color)" d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" />
+  `,
+  'close': svg`
+    <path fill="var(--tp-icon-color)" d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z" />
+  `,
+  'folder': svg`
+    <path fill="var(--tp-icon-color)" d="M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z" />
+  `,
+  'folder-open': svg`
+    <path fill="var(--tp-icon-color)" d="M19,20H4C2.89,20 2,19.1 2,18V6C2,4.89 2.89,4 4,4H10L12,6H16V8H19C20.1,8 21,8.9 21,10V11H4V18L6.14,10H23L21,19C20.83,19.6 20.3,20 19,20Z" />
+  `,
+  'app': svg`
+    <path fill="var(--tp-icon-color)" d="M19 20H3V19H2V3H3V2H19V3H20V19H19ZM18 6V4H4V6ZM18 18V8H4V18Z" />
+  `,
+  'folder-plus': svg`
+    <path fill="var(--tp-icon-color)" d="M10,4L12,6H20A2,2 0 0,1 22,8V11H20V8H12L10,6H4V18H13V20H4A2,2 0 0,1 2,18V6A2,2 0 0,1 4,4H10M21.34,15.84V13.86H19.37V15.84H17.39V17.81H19.37V19.79H21.34V17.81H23.32V15.84H21.34Z" />
+  `,
+  'pencil': svg`
+    <path fill="var(--tp-icon-color)" d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z" />
+  `,
+  'delete': svg`
+    <path fill="var(--tp-icon-color)" d="M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8.46,11.88L9.87,10.47L12,12.59L14.12,10.47L15.53,11.88L13.41,14L15.53,16.12L14.12,17.53L12,15.41L9.88,17.53L8.47,16.12L10.59,14L8.46,11.88M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5Z" />
+  `,
   'copy': svg`
     <path fill="var(--tp-icon-color)" d="M19,21H8V7H19M19,5H8A2,2 0 0,0 6,7V21A2,2 0 0,0 8,23H19A2,2 0 0,0 21,21V7A2,2 0 0,0 19,5M16,1H4A2,2 0 0,0 2,3V17H4V3H16V1Z" />
   `,
