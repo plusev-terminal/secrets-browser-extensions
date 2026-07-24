@@ -27,3 +27,33 @@ tasks:
     desc: Clean build output
     cmds:
       - rm -rf dist
+
+  icons:
+    desc: 'Regenerate the extension toolbar icons (16/48/128 PNG) from a template PNG. Usage: task icons [TEMPLATE=path/to/template.png]'
+    vars:
+      TEMPLATE: '{{.TEMPLATE | default "../../secrets_favicon_template.png"}}'
+    cmds:
+      - |
+        python3 - <<'EOF'
+        import hashlib, os
+        from PIL import Image
+
+        src = os.environ.get('TEMPLATE', '{{.TEMPLATE}}')
+        dst_dir = 'src/static/icons'
+
+        if not os.path.isfile(src):
+          raise SystemExit(f'template not found: {src}')
+
+        os.makedirs(dst_dir, exist_ok=True)
+
+        im = Image.open(src).convert('RGBA')
+        print(f'source: {im.size} {im.mode} from {src}')
+
+        for sz in (16, 48, 128):
+          out = im.resize((sz, sz), Image.LANCZOS)
+          path = os.path.join(dst_dir, f'icon-{sz}.png')
+          out.save(path, 'PNG', optimize=True)
+          with open(path, 'rb') as f:
+            digest = hashlib.sha256(f.read()).hexdigest()[:12]
+          print(f'wrote {path}  sha: {digest}  {os.path.getsize(path)} bytes')
+        EOF

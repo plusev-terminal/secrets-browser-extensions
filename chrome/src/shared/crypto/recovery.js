@@ -22,7 +22,7 @@ Copyright (c) 2025 trading_peter
 // for readability. 32 bytes → 52 base32 chars. We group as 13 groups of 4.
 // Example: "XXXX-XXXX-XXXX-...-XXXX"
 
-import { sealWithRaw, openWithRaw, randomBytes, bytesToBase64, base64ToBytes } from './crypto.js';
+import { sealWithRaw, openWithRaw, randomBytes, bytesToBase64, base64ToBytes, constantTimeEqual } from './crypto.js';
 
 const BASE32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
 const RECOVERY_KEY_BYTES = 32;
@@ -75,8 +75,9 @@ function base32Decode(str) {
 }
 
 // Format a base32 string into human-readable 4-char groups separated by dashes.
-// "ABCD1234" → "ABCD-1234".
+// "ABCD1234" → "ABCD-1234". Safe on empty input — returns an empty string.
 export function formatRecoveryKey(b32) {
+  if (!b32) return '';
   return b32.match(/.{1,4}/g).join('-');
 }
 
@@ -124,7 +125,7 @@ export function decodeRecoveryKey(input) {
 // Returns base64 strings suitable for posting to /api/secrets/vaults/create.
 export async function buildRecoveryBlobs(recoveryKeyBytes, masterKey) {
   const [recoveryVerifier, wrappedMasterByRecovery] = await Promise.all([
-    sealWithRaw(recoveryKeyBytes, 'VAULT_RECOVERY_VERIFIER_v1'),
+    sealWithRaw(recoveryKeyBytes, RECOVERY_VERIFIER_MAGIC),
     sealWithRaw(recoveryKeyBytes, bytesToBase64(masterKey)),
   ]);
 
@@ -132,14 +133,23 @@ export async function buildRecoveryBlobs(recoveryKeyBytes, masterKey) {
 }
 
 // Verify a user-entered recovery key against the stored recoveryVerifier blob.
-export async function verifyRecoveryKey(recoveryKeyBytes, recoveryVerifierBlob) {
-  try {
-    const opened = await openWithRaw(recoveryKeyBytes, recoveryVerifierBlob);
+// Uses a constant-time comparison so timing side-channels cannot distinguish
+// "almost matched" from "wildly wrong" — same rationale as verifyMasterKey.
+const RECOVERY_VERIFIER_MAGIC = 'VAULT_RECOVERY_VERIFIER_v1';
 
-    return opened === 'VAULT_RECOVERY_VERIFIER_v1';
+export async function verifyRecoveryKey(recoveryKeyBytes, recoveryVerifierBlob) {
+  let opened;
+
+  try {
+    opened = await openWithRaw(recoveryKeyBytes, recoveryVerifierBlob);
   } catch {
     return false;
   }
+
+  const a = new TextEncoder().encode(opened);
+  const b = new TextEncoder().encode(RECOVERY_VERIFIER_MAGIC);
+
+  return constantTimeEqual(a, b);
 }
 
 // Recover the MasterKey from the recovery path. Caller must have already

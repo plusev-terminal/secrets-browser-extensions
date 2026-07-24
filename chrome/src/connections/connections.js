@@ -11,96 +11,81 @@ import '@tp/tp-popup/tp-popup-menu-item.js';
 import '@tp/tp-popup/tp-popup-menu-divider.js';
 import '@tp/tp-toaster/tp-toaster.js';
 import '../elements/el-badge.js';
-import icons from '../shared/icons.js';
+import '../elements/el-empty.js';
 import { LitElement, html, css } from 'lit';
+import icons from '../shared/icons.js';
 import themeTokens from '../shared/theme-tokens.js';
 import { controls, shared } from '../shared/styles.js';
+import { DomQuery } from '@tp/helpers/dom-query.js';
 
 function send(msg) { return chrome.runtime.sendMessage(msg); }
 
-export class TheConnections extends LitElement {
+export class TheConnections extends DomQuery(LitElement) {
   static get styles() {
-    return [themeTokens, controls, shared, css`
-      :host {
-        display: block;
-        max-width: 600px;
-        margin: 40px auto;
-        padding: 20px;
-        font-family: var(--font0);
-        font-size: var(--font-size-md);
-        background: var(--page-bg);
-        color: var(--text);
-      }
+    return [
+      themeTokens,
+      controls,
+      shared,
+      css`
+        :host {
+          display: block;
+          max-width: 600px;
+          margin: var(--space-6) auto;
+          padding: var(--space-5);
+          font-family: var(--font0);
+          font-size: var(--font-size-md);
+          background: var(--page-bg);
+          color: var(--text);
+        }
 
-      h1 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+        h1 {
+          font-size: var(--font-size-xl);
+          font-weight: 600;
+          margin-bottom: var(--space-2);
+        }
 
-      .conn-list {
-        margin: 20px 0;
-        border-radius: var(--default-border-radius);
-        overflow: hidden;
-      }
+        .conn-list {
+          margin: var(--space-5) 0;
+          overflow: hidden;
+        }
 
-      .conn-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 16px;
-        border: solid 1px var(--border-strong);
-        border-bottom: none;
-        background: var(--surface);
-      }
+        .conn-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: var(--space-4) var(--space-5);
+          border: solid 1px var(--border-strong);
+          background: var(--surface);
+          border-radius: var(--default-border-radius);
+          cursor: pointer;
+        }
 
-      .conn-item:last-child { border-bottom: solid 1px var(--border-strong); }
-      .conn-item:hover { background: var(--surface-hover); }
-      .conn-item.active { background: var(--surface-active); }
+        .conn-item + .conn-item {
+          margin-top: var(--space-3);
+        }
 
-      .conn-info {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex: 1;
-        cursor: pointer;
-      }
+        .conn-item:hover { background: var(--surface-hover); }
+        .conn-item.active { background: var(--surface-active); }
 
-      .conn-name { font-weight: 500; }
-      .conn-url { font-size: var(--font-size-xs); color: var(--text-dim); }
-      .conn-actions { display: flex; gap: 8px; align-items: center; }
+        .conn-info {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          flex: 1;
+        }
 
-      .empty-hint {
-        padding: 20px;
-        text-align: center;
-        color: var(--text-dim);
-      }
+        .conn-name { font-weight: 500; }
+        .conn-url { font-size: var(--font-size-xs); color: var(--text-dim); }
+        .conn-actions { display: flex; gap: var(--space-2); align-items: center; }
 
-      .btn-row { display: flex; gap: 10px; margin: 16px 0; }
+        .conn-icon {
+          --tp-icon-width: 22px;
+          --tp-icon-height: 22px;
+        }
 
-      tp-dialog label { display: block; color: var(--label-color); padding-bottom: 5px; }
-      tp-dialog tp-input { display: block; margin-bottom: 16px; }
-
-      tp-toast {
-        border-radius: var(--popup-border-radius);
-        background: var(--palette-text);
-        color: var(--palette-bg);
-        font-weight: bold;
-      }
-
-      tp-toast::part(dismiss-icon):hover { --tp-icon-color: var(--icon-color-hover); }
-      tp-toast[type="warning"] { background: var(--warning-color); color: var(--palette-bg); }
-      tp-toast[type="error"] { background: var(--error-color); color: var(--palette-text); }
-      tp-toast[type="error"]::part(type-icon) { --tp-icon-color: var(--palette-text); }
-      tp-toast[type="error"]::part(dismiss-icon) { --tp-icon-color: var(--palette-text); }
-      tp-toast[type="error"]::part(dismiss-icon):hover { --tp-icon-color: var(--palette-bg); }
-      tp-toast[type="error"]::part(timeout-strip) { --tp-timeout-strip-color: var(--palette-text); }
-
-      tp-toast::part(timeout-strip) {
-        left: 0px; right: 0px; bottom: 0px;
-        border-radius: 0 0 var(--popup-border-radius) var(--popup-border-radius);
-        overflow: hidden;
-        --tp-timeout-strip-width: 5px;
-        --tp-timeout-strip-color: var(--palette-accent);
-      }
-
-      tp-toast::part(inner-strip) { margin-top: 3px; height: 2px; }
+        .conn-menu-toggle {
+          cursor: pointer;
+        }
     `];
   }
 
@@ -109,16 +94,15 @@ export class TheConnections extends LitElement {
     _activeConnectionId: {},
     _editingConn: { type: Object },
     _deletingConn: { type: Object },
-    _testing: { type: Boolean },
   };
 
   constructor() {
     super();
+
     this._connections = [];
     this._activeConnectionId = '';
     this._editingConn = null;
     this._deletingConn = null;
-    this._testing = false;
   }
 
   async connectedCallback() {
@@ -136,15 +120,21 @@ export class TheConnections extends LitElement {
   render() {
     return html`
       <h1>Connections</h1>
-      <p class="hint">Manage your Terminal server connections. Click a connection to make it active.</p>
+      <p class="hint">Manage your Terminal server connections. Each connections requires a API key with <i>secrets.read</i> and <i>secrets.write</i> permissions.</p>
 
       <div class="conn-list">
         ${this._connections.length === 0
-          ? html`<div class="empty-hint">No connections yet.</div>`
-          : this._connections.map(c => html`
-            <div class="conn-item ${c.id === this._activeConnectionId ? 'active' : ''}">
-              <div class="conn-info" @click=${() => this._selectConnection(c.id)}>
-                <tp-icon class="static" .icon=${icons['server-network-on']} style="--tp-icon-width:22px;--tp-icon-height:22px;"></tp-icon>
+          ? html`
+            <el-empty absolute>
+              <div>No connections yet.</div>
+              <div class="button-centered">
+                <tp-button @click=${() => this._openAdd()}>Add Connection</tp-button>
+              </div>
+            </el-empty>
+          ` : this._connections.map(c => html`
+            <div class="conn-item ${c.id === this._activeConnectionId ? 'active' : ''}"  @click=${e => this._selectConnection(e, c.id)}>
+              <div class="conn-info">
+                <tp-icon class="conn-icon static" .icon=${icons['server-network-on']}></tp-icon>
                 <div>
                   <div class="conn-name">${c.name}</div>
                   <div class="conn-url">${c.serverURL}</div>
@@ -153,23 +143,21 @@ export class TheConnections extends LitElement {
               <div class="conn-actions">
                 ${c.id === this._activeConnectionId ? html`<el-badge preset="on">Active</el-badge>` : ''}
                 <tp-popup alwaysToggle halign="right">
-                  <tp-icon slot="toggle" .icon=${icons['vertical-dots']} style="cursor:pointer;"></tp-icon>
+                  <tp-icon slot="toggle" class="conn-menu-toggle" .icon=${icons['vertical-dots']}></tp-icon>
                   <tp-popup-menu slot="content">
                     <tp-popup-menu-item @click=${() => this._openEdit(c)}>Edit</tp-popup-menu-item>
-                    ${this._connections.length > 1 ? html`
-                      <tp-popup-menu-divider></tp-popup-menu-divider>
-                      <tp-popup-menu-item @click=${() => this._openDelete(c)}>Delete</tp-popup-menu-item>
-                    ` : ''}
+                    <tp-popup-menu-item @click=${() => this._openDelete(c)}>Delete</tp-popup-menu-item>
                   </tp-popup-menu>
                 </tp-popup>
               </div>
             </div>
-          `)
-        }
-      </div>
 
-      <div class="btn-row">
-        <tp-button @click=${() => this._openAdd()}>Add Connection</tp-button>
+            `)
+        }
+
+        <div class="button-centered">
+          <tp-button @click=${() => this._openAdd()}>Add Connection</tp-button>
+        </div>
       </div>
 
       ${this._renderEditDialog()}
@@ -180,25 +168,18 @@ export class TheConnections extends LitElement {
 
   _openAdd() {
     this._editingConn = { id: '', name: '', serverURL: '', apiKey: '', apiSecret: '', isNew: true };
-    this._testing = false;
-    this.requestUpdate();
-    this.updateComplete.then(() => this._dialog('editDialog')?.show());
+    this.$.editDialog.show();
   }
 
   _openEdit(conn) {
     this._editingConn = { ...conn, isNew: false };
-    this._testing = false;
-    this.requestUpdate();
-    this.updateComplete.then(() => this._dialog('editDialog')?.show());
+    this.$.editDialog.show();
   }
 
   _dialog(id) { return this.shadowRoot.querySelector(`#${id}`); }
 
   _renderEditDialog() {
-    if (!this._editingConn) return html``;
-    const c = this._editingConn;
-
-    console.log(c);
+    const c = this._editingConn || {};
 
     return html`
       <tp-dialog id="editDialog" showClose modal closeOnEsc closeOnOutsideClick
@@ -220,19 +201,19 @@ export class TheConnections extends LitElement {
 
             <label>API Key</label>
             <tp-input name="apiKey" .value=${c.apiKey} required errorMessage="API key is required">
-              <input type="text" placeholder="key_abc123..."
+              <input type="text" placeholder="abc123..."
                 @input=${e => { c.apiKey = e.target.value; }}>
             </tp-input>
 
             <label>API Secret</label>
             <tp-input name="apiSecret" .value=${c.apiSecret} required errorMessage="API secret is required">
-              <input type="password" placeholder="secret_xyz..."
+              <input type="password" placeholder="xyz..."
                 @input=${e => { c.apiSecret = e.target.value; }}>
             </tp-input>
 
             <div class="buttons-justified">
               <tp-button @click=${() => { this._editingConn = null; this._dialog('editDialog')?.close(); }}>Cancel</tp-button>
-              <tp-button @click=${() => this._testFromForm()} ?loading=${this._testing}>Test</tp-button>
+              <tp-button @click=${e => this._testFromForm(e)} extended>Test</tp-button>
               <tp-button submit>Save</tp-button>
             </div>
           </form>
@@ -241,7 +222,8 @@ export class TheConnections extends LitElement {
     `;
   }
 
-  async _testFromForm() {
+  async _testFromForm(e) {
+    const btn = e.target;
     const c = this._editingConn;
 
     if (!c.name || !c.serverURL || !c.apiKey || !c.apiSecret) {
@@ -249,32 +231,51 @@ export class TheConnections extends LitElement {
       return;
     }
 
-    this._testing = true;
+    btn.showSpinner();
     this.requestUpdate();
 
-    // Temporarily apply credentials as active connection so LIST_VAULTS uses them.
-    // For new connections: create it now (the ID gets stored so save reuses it).
-    // For existing: just SET_CONFIG temporarily.
+    // For new connections: persist first so the ID is stable for the live
+    // config write that follows. For existing: just write through SET_CONFIG.
     if (c.isNew && !c.id) {
-      const r = await send({ type: 'ADD_CONNECTION', name: c.name, serverURL: c.serverURL, apiKey: c.apiKey, apiSecret: c.apiSecret });
-      if (r.error) { window.TpToaster.add({ type: 'error', content: r.error }); this._testing = false; this.requestUpdate(); return; }
+      const r = await send({
+        type: 'ADD_CONNECTION',
+        name: c.name,
+        serverURL: c.serverURL,
+        apiKey: c.apiKey,
+        apiSecret: c.apiSecret,
+      });
+
+      if (r.error) {
+        window.TpToaster.add({ type: 'error', content: r.error });
+        btn.showError();
+        return;
+      }
+
       c.id = r.connection.id;
       c.isNew = false;
       await send({ type: 'SET_ACTIVE_CONNECTION', id: c.id });
     } else if (!c.isNew) {
-      await send({ type: 'SET_CONFIG', config: { serverURL: c.serverURL, apiKey: c.apiKey, apiSecret: c.apiSecret } });
+      await send({
+        type: 'SET_CONFIG',
+        config: { serverURL: c.serverURL, apiKey: c.apiKey, apiSecret: c.apiSecret },
+      });
     }
 
     try {
       const r = await send({ type: 'LIST_VAULTS' });
+
       if (r.error) throw new Error(r.error);
-      window.TpToaster.add({ type: 'success', content: `Connected — found ${r.vaults.length} vault(s).`, delay: 4000 });
+
+      window.TpToaster.add({
+        type: 'success',
+        content: `Connected — found ${r.vaults.length} vault(s).`,
+        delay: 4000,
+      });
+      btn.showSuccess();
     } catch (e) {
       window.TpToaster.add({ type: 'error', content: `Connection failed: ${e.message}` });
+      btn.showError();
     }
-
-    this._testing = false;
-    this.requestUpdate();
   }
 
   async _saveFromForm(e) {
@@ -283,10 +284,18 @@ export class TheConnections extends LitElement {
 
     if (c.id) {
       // Already persisted (by test or was existing) — update.
-      await send({ type: 'SET_CONFIG', config: { name, serverURL, apiKey, apiSecret } });
+      await send({
+        type: 'SET_CONFIG',
+        config: { name, serverURL, apiKey, apiSecret },
+      });
     } else {
       const r = await send({ type: 'ADD_CONNECTION', name, serverURL, apiKey, apiSecret });
-      if (r.error) { window.TpToaster.add({ type: 'error', content: r.error }); return; }
+
+      if (r.error) {
+        window.TpToaster.add({ type: 'error', content: r.error });
+        return;
+      }
+
       await send({ type: 'SET_ACTIVE_CONNECTION', id: r.connection.id });
     }
 
@@ -295,8 +304,6 @@ export class TheConnections extends LitElement {
     await this._reload();
     window.TpToaster.add({ type: 'success', content: 'Connection saved.' });
   }
-
-  // ── Delete Dialog ──
 
   _openDelete(conn) {
     this._deletingConn = conn;
@@ -323,6 +330,7 @@ export class TheConnections extends LitElement {
 
   async _confirmDelete() {
     if (!this._deletingConn) return;
+
     await send({ type: 'REMOVE_CONNECTION', id: this._deletingConn.id });
     this._deletingConn = null;
     this._dialog('deleteDialog')?.close();
@@ -330,8 +338,9 @@ export class TheConnections extends LitElement {
     window.TpToaster.add({ type: 'success', content: 'Connection deleted.' });
   }
 
-  async _selectConnection(id) {
-    if (id === this._activeConnectionId) return;
+  async _selectConnection(e, id) {
+    if (id === this._activeConnectionId || e.composedPath().some(n => n.tagName === 'TP-POPUP')) return;
+
     await send({ type: 'SET_ACTIVE_CONNECTION', id });
     await this._reload();
     window.TpToaster.add({ type: 'success', content: 'Active connection switched.' });

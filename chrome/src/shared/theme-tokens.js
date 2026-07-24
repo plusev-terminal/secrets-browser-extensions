@@ -27,6 +27,7 @@ export default css`
   --success-color: #00d1b2;
   --warning-color: #ffb400;
   --error-color: #d00e58;
+  --info-color: var(--palette-info);
 
   /* ── Semantic ── */
   --text: var(--palette-text);
@@ -54,11 +55,26 @@ export default css`
   --font-size-sm: 0.8rem;
   --font-size-md: 0.9rem;
   --font-size-lg: 1rem;
+  --font-size-xl: 1.2rem;
+  --font-size-2xl: 1.5rem;
+
+  /* ── Spacing scale (per terminal-frontend-style) ── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
 
   /* ── Radii ── */
-  --default-border-radius: 4px;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+  --default-border-radius: var(--radius-md);
 
   /* ── Shadows ── */
+  --shadow-sm: 0px 2px 4px 0px rgb(0 0 0 / 12%);
   --shadow-md: 0px 5px 7px 0px rgb(0 0 0 / 16%);
   --shadow-lg: 0px 10px 24px 0px rgb(0 0 0 / 32%);
 

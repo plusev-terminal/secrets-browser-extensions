@@ -125,16 +125,17 @@ export async function decryptEntry(masterKey, wrappedDek, ciphertext) {
 // Re-wrap every DEK under a new MasterKey. Used at password-rotation time.
 // The ciphertext payloads are untouched — only the wrapping changes.
 //
-// Entries is an array of { wrappedDek, ... } objects. Returns a Map of
-// entryId → new wrappedDek string.
+// Entries is an array of { id, unwrappedDekB64 } objects. The caller is
+// responsible for unwrapping the existing DEKs with the OLD master key before
+// passing them in — this function only takes the new key. A password-rotation
+// orchestrator (not yet implemented) will own the unwrap-with-old /
+// rewrap-with-new choreography.
+//
+// Returns a Map of entryId → new wrappedDek string.
 export async function rewrapEntries(newMasterKey, entries) {
   const out = new Map();
 
   for (const entry of entries) {
-    // Unwrap with the OLD master key first. Caller must pass the old key in
-    // via the closure that builds this call — this function only knows the
-    // new key. (See SecretsStore.rotateMasterPassword for the orchestration.)
-    // Here we just produce the re-wrapped form for already-unwrapped DEKs.
     const dekBytes = base64ToBytes(entry.unwrappedDekB64);
 
     out.set(entry.id, await wrapDek(newMasterKey, dekBytes));

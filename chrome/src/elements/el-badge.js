@@ -10,7 +10,7 @@ class ElBadge extends Tooltip(LitElement) {
       :host {
         display: inline-block;
         padding: var(--badge-padding, 2px 8px);
-        border-radius: 4px;
+        border-radius: var(--radius-md);
         font-size: var(--font-size-xs);
         font-weight: bold;
         text-transform: uppercase;

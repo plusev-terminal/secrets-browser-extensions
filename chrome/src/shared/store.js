@@ -8,8 +8,10 @@
 
 import { deriveMasterKey, DEFAULT_KDF_PARAMS } from './crypto/kdf.js';
 import { base64ToBytes } from './crypto/crypto.js';
-import { verifyMasterKey, wrapDek, unwrapDek, encryptEntry, decryptEntry } from './crypto/keys.js';
+import { verifyMasterKey, decryptEntry } from './crypto/keys.js';
 import { buildIndex, addToIndex, removeFromIndex } from './search/index.js';
+import { parseQuery, matchesOperators } from './search/query.js';
+import { scoreRow, rankByScore } from './search/score.js';
 
 export class VaultStore {
   constructor() {
@@ -43,7 +45,7 @@ export class VaultStore {
 
     const masterKey = await deriveMasterKey(password, salt, params);
 
-    if (!verifyMasterKey(masterKey, vault.verifier)) {
+    if (!(await verifyMasterKey(masterKey, vault.verifier))) {
       throw new Error('Incorrect master password');
     }
 
@@ -64,26 +66,28 @@ export class VaultStore {
 
     // Decrypt entries.
     this.entries.clear();
+
     for (const wireEntry of entries) {
       if (wireEntry.deletedAt) continue;
 
       try {
         const payload = await decryptEntry(this.masterKey, wireEntry.wrappedDek, wireEntry.ciphertext);
         this.entries.set(wireEntry.id, { ...wireEntry, payload });
-      } catch (e) {
+      } catch {
         // Skip entries that fail to decrypt (corrupted or wrong key).
       }
     }
 
     // Decrypt folders.
     this.folders.clear();
+
     for (const wireFolder of folders) {
       if (wireFolder.deletedAt) continue;
 
       try {
         const payload = await decryptEntry(this.masterKey, wireFolder.wrappedDek, wireFolder.ciphertext);
         this.folders.set(wireFolder.id, { ...wireFolder, payload });
-      } catch (e) {
+      } catch {
         // Skip.
       }
     }
@@ -95,9 +99,10 @@ export class VaultStore {
   // Check if the vault revision has changed (cheap poll).
   async checkRevision() {
     const resp = await this.client.get(`/revision-date?vaultId=${this.vault.id}`);
-    const serverRev = new Date(resp.data.revisionDate);
-    const localRev = new Date(this.vault.revisionDate || 0);
-    return serverRev > localRev;
+    const serverTs = Date.parse(resp.data.revisionDate);
+    const localTs = Date.parse(this.vault.revisionDate || 0);
+
+    return serverTs > localTs;
   }
 
   // Get an entry's decrypted payload.
@@ -105,28 +110,25 @@ export class VaultStore {
     return this.entries.get(id) || null;
   }
 
-  // Search entries by free-text query.
+  // Search entries by query. Supports the operator syntax from
+  // search/query.js (tag:, host:, type:, scope:, has:, strength:, changed:)
+  // plus free-text scoring via search/score.js. When the query is empty, all
+  // entries are returned, ranked by recency × frequency.
   search(query) {
-    if (!this.index || !query) {
-      return [...this.entries.values()];
+    if (!this.index) return [];
+
+    const { operators, text } = parseQuery(query);
+    const rows = this.index.rows;
+
+    const scored = [];
+
+    for (const row of rows) {
+      if (!matchesOperators(row, operators)) continue;
+
+      scored.push({ row, score: scoreRow(row, text) });
     }
 
-    // The search index doesn't export a search function directly — it builds
-    // a row array. We do a simple filter for the popup. The full query parser
-    // can be wired in later.
-    const q = query.toLowerCase();
-    const results = [];
-
-    for (const entry of this.entries.values()) {
-      const title = (entry.payload.title || '').toLowerCase();
-      const username = (entry.payload.username || '').toLowerCase();
-
-      if (title.includes(q) || username.includes(q)) {
-        results.push(entry);
-      }
-    }
-
-    return results;
+    return rankByScore(scored).map(({ row }) => this.entries.get(row.id));
   }
 
   // Match entries against a hostname for autofill.
@@ -137,15 +139,21 @@ export class VaultStore {
       if (entry.type !== 'login') continue;
 
       const urls = entry.payload.urls || [];
+
       for (const url of urls) {
         try {
-          const entryHost = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
+          const withScheme = /^https?:\/\//i.test(url) ? url : `https://${url}`;
+          const entryHost = new URL(withScheme).hostname;
 
-          if (entryHost === hostname || entryHost.endsWith(`.${hostname}`) || hostname.endsWith(`.${entryHost}`)) {
+          if (
+            entryHost === hostname ||
+            entryHost.endsWith(`.${hostname}`) ||
+            hostname.endsWith(`.${entryHost}`)
+          ) {
             results.push(entry);
             break;
           }
-        } catch (e) {
+        } catch {
           // Skip malformed URLs.
         }
       }
@@ -156,14 +164,17 @@ export class VaultStore {
 
   // Lock: scrub all sensitive state.
   lock() {
-    if (this.masterKey) {
-      this.masterKey.fill(0);
-    }
-
     this._scrub();
   }
 
   _scrub() {
+    if (this.masterKey) {
+      // Best-effort zero before dropping the reference — JS GC is
+      // non-deterministic, but the fill is cheap and ensures the buffer is
+      // scrubbed if a copy escaped.
+      try { this.masterKey.fill(0); } catch { /* typed array views may not support fill */ }
+    }
+
     this.masterKey = null;
     this.entries.clear();
     this.folders.clear();

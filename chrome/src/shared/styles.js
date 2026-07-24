@@ -117,10 +117,21 @@ export const controls = css`
     border-radius: 4px;
   }
 
+  tp-popup::part(toggle) {
+    display: flex;
+    align-items: center;
+  }
+
   tp-popup-menu {
     background: var(--popup-bg);
     border-radius: var(--popup-border-radius);
     --tp-popup-menu-item-color: var(--text);
+  }
+
+  tp-popup-menu.context-menu {
+    position: fixed;
+    z-index: 9999;
+    box-shadow: var(--popup-box-shadow);
   }
 
   tp-popup-menu-item:not([readonly]):hover {
@@ -137,8 +148,13 @@ export const controls = css`
     --tp-icon-color: var(--icon-color);
   }
 
-  tp-popup-menu-item.toggle::part(icon) { opacity: 0.1; }
-  tp-popup-menu-item.toggle:is(:hover, [selected])::part(icon) { opacity: 1; }
+  tp-popup-menu-item.toggle::part(icon) {
+    opacity: 0.1;
+  }
+
+  tp-popup-menu-item.toggle:is(:hover, [selected])::part(icon) {
+    opacity: 1;
+  }
 
   tp-popup-menu-divider {
     --tp-popup-menu-divider-spacing: 5px;
@@ -156,6 +172,58 @@ export const controls = css`
 
   tp-icon.static {
     cursor: default;
+  }
+
+  tp-toast {
+    border-radius: var(--popup-border-radius);
+    background: var(--palette-text);
+    color: var(--palette-bg);
+    font-weight: bold;
+  }
+
+  tp-toast::part(dismiss-icon):hover {
+    --tp-icon-color: var(--icon-color-hover);
+  }
+
+  tp-toast[type="warning"] {
+    background: var(--warning-color);
+    color: var(--palette-bg);
+  }
+
+  tp-toast[type="error"] {
+    background: var(--error-color);
+    color: var(--palette-text);
+  }
+
+  tp-toast[type="error"]::part(type-icon) {
+    --tp-icon-color: var(--palette-text);
+  }
+
+  tp-toast[type="error"]::part(dismiss-icon) {
+    --tp-icon-color: var(--palette-text);
+  }
+
+  tp-toast[type="error"]::part(dismiss-icon):hover {
+    --tp-icon-color: var(--palette-bg);
+  }
+
+  tp-toast[type="error"]::part(timeout-strip) {
+    --tp-timeout-strip-color: var(--palette-text);
+  }
+
+  tp-toast::part(timeout-strip) {
+    left: 0px;
+    right: 0px;
+    bottom: 0px;
+    border-radius: 0 0 var(--popup-border-radius) var(--popup-border-radius);
+    overflow: hidden;
+    --tp-timeout-strip-width: 5px;
+    --tp-timeout-strip-color: var(--palette-accent);
+  }
+
+  tp-toast::part(inner-strip) {
+    margin-top: 3px;
+    height: 2px;
   }
 `;
 
@@ -235,6 +303,13 @@ export const shared = css`
     padding: 20px 0;
   }
 
+  .button-centered {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+  }
+
   .buttons-justified {
     margin-top: 20px;
     display: flex;
@@ -246,7 +321,7 @@ export const shared = css`
     margin-left: 20px;
   }
 
-  :is(tp-input, tp-dropdown) + label {
+  :is(tp-input, tp-textarea, tp-number-input, tp-dropdown, tp-radio-group, tp-multi-toggle, tp-checkbox, .horizontal) + label {
     padding-top: 20px;
   }
 
